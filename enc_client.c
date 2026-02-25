@@ -15,19 +15,12 @@ void error(const char *msg){
     exit(1);
 }
 
-void setupAddressStruct(struct sockaddr_in* address, int portNumber, char *hostname){
+void setupAddressStruct(struct sockaddr_in* address, int portNumber){
     memset((char*) address, '\0', sizeof(*address));
     address->sin_family = AF_INET;
     address->sin_port = htons(portNumber);
 
-    struct hostent* hostInfo = gethostbyname(hostname);
-    if (hostInfo == NULL) {
-        fprintf(stderr, "CLIENT: ERROR, no such host\n");
-        exit(0);
-    }
-    memcpy((char*) &address->sin_addr.s_addr,
-            hostInfo->h_addr_list[0],
-            hostInfo->h_length);
+    address->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 }
 
 int main(int argc, char *argv[]) {
@@ -35,8 +28,8 @@ int main(int argc, char *argv[]) {
   struct sockaddr_in serverAddress;
   char buffer[256];
 
-  if (argc < 3) {
-    fprintf(stderr,"USAGE: %s hostname port\n", argv[0]);
+  if (argc < 4) {
+    fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]);
     exit(0);
   }
 
@@ -45,7 +38,7 @@ int main(int argc, char *argv[]) {
     error("CLIENT: ERROR opening socket");
   }
 
-  setupAddressStruct(&serverAddress, atoi(argv[2]), argv[1]);
+  setupAddressStruct(&serverAddress, atoi(argv[3]));
 
   if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0){
     error("CLIENT: ERROR connecting");

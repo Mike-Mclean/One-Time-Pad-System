@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+int MAX_SOCKET_CONNECTIONS = 5;
+
 void error(const char *msg) {
   perror(msg);
   exit(1);
@@ -43,7 +45,7 @@ int main(int argc, char *argv[]){
     error("ERROR on binding");
   }
 
-  listen(listenSocket, 5);
+  listen(listenSocket, MAX_SOCKET_CONNECTIONS);
 
   while(1){
     connectionSocket = accept(listenSocket,
@@ -64,8 +66,10 @@ int main(int argc, char *argv[]){
     }
     printf("SERVER: I received this from the client: \"%s\"\n", buffer);
 
-    charsRead = send(connectionSocket,
-                    "I am the server, and I got your message", 39, 0);
+    char *msg = "I am the server, and I got your message";
+    int msg_len = strlen(msg);
+
+    charsRead = send(connectionSocket, msg, msg_len, 0);
     if (charsRead < 0){
       error("ERROR writing to socket");
     }

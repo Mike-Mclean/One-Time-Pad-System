@@ -1,3 +1,8 @@
 TestFiles/
 client.c
 server.c
+dec_client
+enc_client
+enc_server
+dec_server
+keygen
