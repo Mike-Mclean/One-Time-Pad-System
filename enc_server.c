@@ -9,6 +9,79 @@
 
 int MAX_SOCKET_CONNECTIONS = 5;
 
+char *encryptText(char *plaintextPath, char *keyPath){
+  char *plaintextLine = NULL;
+  char *keyLine = NULL;
+  size_t plaintextLen = 0;
+  size_t keyLen = 0;
+
+  FILE *plaintextFile = fopen(plaintextPath, "r");
+  FILE *keyFile = fopen(keyPath, "r");
+
+  if (!plaintextFile || !keyFile){
+    perror("Error opening files.\n");
+    return NULL;
+  }
+
+  if (getline(&plaintextLine, &plaintextLen, plaintextFile) == -1){
+    perror("Error reading plaintext file.\n");
+    return NULL;
+  }
+
+  if (getline(&keyLine, &keyLen, keyFile) == -1){
+    perror("Error reading plaintext file.\n");
+    return NULL;
+  }
+
+  plaintextLine[strcspn(plaintextLine, "\n")] = '\0';
+  keyLine[strcspn(keyLine, "\n")] = '\0';
+  plaintextLen = strlen(plaintextLine);
+  keyLen = strlen(keyLine);
+
+  fclose(plaintextFile);
+  fclose(keyFile);
+
+  if (keyLen < plaintextLen){
+    free(plaintextLine);
+    free(keyLine);
+    perror("ERROR: Key is shorter than plaintext");
+    return NULL;
+  }
+
+  char *cipherText = malloc(plaintextLen + 1);
+  int cipherLetter;
+  int plaintextLetter;
+  int keyLetter;
+
+  for (int i = 0; i < plaintextLen; i++){
+    if (plaintextLine[i] == ' '){
+      plaintextLetter = 26;
+    } else {
+      plaintextLetter = plaintextLine[i] - 'A';
+    }
+
+    if (keyLine[i] == ' '){
+      keyLetter = 26;
+    } else {
+      keyLetter = keyLine[i] - 'A';
+    }
+
+    cipherLetter = (keyLetter + plaintextLetter) % 27;
+    if (cipherLetter == 26){
+      cipherText[i] = ' ';
+    } else {
+      cipherText[i] = 'A' + cipherLetter;
+    }
+  }
+
+  cipherText[plaintextLen] = '\0';
+
+  free(plaintextLine);
+  free(keyLine);
+  return cipherText;
+
+}
+
 void error(const char *msg) {
   perror(msg);
   exit(1);
@@ -24,8 +97,9 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber){
 
 int main(int argc, char *argv[]){
   int connectionSocket, textRead, keyRead;
-  char textBuffer[256];
-  char keyBuffer [256];
+  char buffer[256];
+  char *plaintext;
+  char *key;
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
@@ -60,20 +134,29 @@ int main(int argc, char *argv[]){
     pid_t pid = fork();
 
     if (pid < 0){
+
       perror("Fork failed");
       close(connectionSocket);
       exit(0);
+
     } else if (pid == 0){
+
       printf("SERVER: Connected to client running at host %d port %d\n",
         ntohs(clientAddress.sin_addr.s_addr),
         ntohs(clientAddress.sin_port));
 
-      memset(textBuffer, '\0', 256);
-      textRead = recv(connectionSocket, textBuffer, 255, 0);
+      memset(buffer, '\0', 256);
+      textRead = recv(connectionSocket, buffer, 255, 0);
       if (textRead < 0){
         error("ERROR reading textfile from socket");
       }
-      printf("SERVER: The text file the client is sending is: \"%s\"\n", textBuffer);
+      printf("SERVER: The text file the client is sending is: \"%s\"\n", buffer);
+
+      plaintext = strtok(buffer, " ");
+
+      key = strtok(NULL, " ");
+
+      printf("SERVER: The plaintext value is:%s: and key value is:%s: \n", plaintext, key);
 
       char *msg = "I am the server, and I got your message";
       int msg_len = strlen(msg);
