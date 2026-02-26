@@ -44,12 +44,11 @@ int main(int argc, char *argv[]) {
     error("CLIENT: ERROR connecting");
   }
 
-  printf("CLIENT: Enter text to send to the server, and then hit enter: ");
+  printf("CLIENT: Sending PLAINTEXT to server: \n");
 
   memset(buffer, '\0', sizeof(buffer));
 
-  fgets(buffer, sizeof(buffer) - 1, stdin);
-  buffer[strcspn(buffer, "\n")] = '\0';
+  snprintf(buffer, sizeof(buffer), "%s %s", argv[1], argv[2]);
 
   charsWritten = send(socketFD, buffer, strlen(buffer), 0);
   if (charsWritten < 0){
@@ -58,8 +57,6 @@ int main(int argc, char *argv[]) {
   if (charsWritten < strlen(buffer)){
     printf("CLIENT: WARNING: Not all data written to socket!\n");
   }
-
-  memset(buffer, '\0', sizeof(buffer));
 
   charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
   if (charsRead < 0){

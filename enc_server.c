@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/wait.h>
 
 int MAX_SOCKET_CONNECTIONS = 5;
 
@@ -22,8 +23,9 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber){
 }
 
 int main(int argc, char *argv[]){
-  int connectionSocket, charsRead;
-  char buffer[256];
+  int connectionSocket, textRead, keyRead;
+  char textBuffer[256];
+  char keyBuffer [256];
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
@@ -55,26 +57,39 @@ int main(int argc, char *argv[]){
       error("ERROR on accept");
     }
 
-    printf("SERVER: Connected to client running at host %d port %d\n",
+    pid_t pid = fork();
+
+    if (pid < 0){
+      perror("Fork failed");
+      close(connectionSocket);
+      exit(0);
+    } else if (pid == 0){
+      printf("SERVER: Connected to client running at host %d port %d\n",
         ntohs(clientAddress.sin_addr.s_addr),
         ntohs(clientAddress.sin_port));
 
-    memset(buffer, '\0', 256);
-    charsRead = recv(connectionSocket, buffer, 255, 0);
-    if (charsRead < 0){
-      error("ERROR reading from socket");
+      memset(textBuffer, '\0', 256);
+      textRead = recv(connectionSocket, textBuffer, 255, 0);
+      if (textRead < 0){
+        error("ERROR reading textfile from socket");
+      }
+      printf("SERVER: The text file the client is sending is: \"%s\"\n", textBuffer);
+
+      char *msg = "I am the server, and I got your message";
+      int msg_len = strlen(msg);
+
+      textRead = send(connectionSocket, msg, msg_len, 0);
+      if (textRead < 0){
+        error("ERROR writing to socket");
+      }
+
+      close(connectionSocket);
+    } else {
+      close(connectionSocket);
+      pid_t id = waitpid(-1, NULL, WNOHANG);
     }
-    printf("SERVER: I received this from the client: \"%s\"\n", buffer);
 
-    char *msg = "I am the server, and I got your message";
-    int msg_len = strlen(msg);
 
-    charsRead = send(connectionSocket, msg, msg_len, 0);
-    if (charsRead < 0){
-      error("ERROR writing to socket");
-    }
-
-    close(connectionSocket);
   }
 
   close(listenSocket);
