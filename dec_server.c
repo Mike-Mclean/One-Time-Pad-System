@@ -9,21 +9,21 @@
 
 int MAX_SOCKET_CONNECTIONS = 5;
 
-char *encryptText(char *plaintextPath, char *keyPath){
-  char *plaintextLine = NULL;
+char *decryptText(char *ciphertextPath, char *keyPath){
+  char *ciphertextLine = NULL;
   char *keyLine = NULL;
-  size_t plaintextLen = 0;
+  size_t ciphertextLen = 0;
   size_t keyLen = 0;
 
-  FILE *plaintextFile = fopen(plaintextPath, "r");
+  FILE *ciphertextFile = fopen(ciphertextPath, "r");
   FILE *keyFile = fopen(keyPath, "r");
 
-  if (!plaintextFile || !keyFile){
+  if (!ciphertextFile || !keyFile){
     perror("Error opening files.\n");
     return NULL;
   }
 
-  if (getline(&plaintextLine, &plaintextLen, plaintextFile) == -1){
+  if (getline(&ciphertextLine, &ciphertextLen, ciphertextFile) == -1){
     perror("Error reading plaintext file.\n");
     return NULL;
   }
@@ -33,31 +33,31 @@ char *encryptText(char *plaintextPath, char *keyPath){
     return NULL;
   }
 
-  plaintextLine[strcspn(plaintextLine, "\n")] = '\0';
+  ciphertextLine[strcspn(ciphertextLine, "\n")] = '\0';
   keyLine[strcspn(keyLine, "\n")] = '\0';
-  plaintextLen = strlen(plaintextLine);
+  ciphertextLen = strlen(ciphertextLine);
   keyLen = strlen(keyLine);
 
-  fclose(plaintextFile);
+  fclose(ciphertextFile);
   fclose(keyFile);
 
-  if (keyLen < plaintextLen){
-    free(plaintextLine);
+  if (keyLen < ciphertextLen){
+    free(ciphertextLine);
     free(keyLine);
     perror("ERROR: Key is shorter than plaintext");
     return NULL;
   }
 
-  char *cipherText = malloc(plaintextLen + 1);
+  char *cipherText = malloc(ciphertextLen + 1);
   int cipherLetter;
   int plaintextLetter;
   int keyLetter;
 
-  for (int i = 0; i < plaintextLen; i++){
-    if (plaintextLine[i] == ' '){
+  for (int i = 0; i < ciphertextLen; i++){
+    if (ciphertextLine[i] == ' '){
       plaintextLetter = 26;
     } else {
-      plaintextLetter = plaintextLine[i] - 'A';
+      plaintextLetter = ciphertextLine[i] - 'A';
     }
 
     if (keyLine[i] == ' '){
@@ -74,9 +74,9 @@ char *encryptText(char *plaintextPath, char *keyPath){
     }
   }
 
-  cipherText[plaintextLen] = '\0';
+  cipherText[ciphertextLen] = '\0';
 
-  free(plaintextLine);
+  free(ciphertextLine);
   free(keyLine);
   return cipherText;
 
@@ -87,7 +87,6 @@ void error(const char *msg) {
   exit(1);
 }
 
-// Set up the address struct for the server socket
 void setupAddressStruct(struct sockaddr_in* address, int portNumber){
   memset((char*) address, '\0', sizeof(*address));
   address->sin_family = AF_INET;
@@ -98,7 +97,7 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber){
 int main(int argc, char *argv[]){
   int connectionSocket, textRead, keyRead;
   char buffer[256];
-  char *plaintext;
+  char *ciphertext;
   char *key;
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
@@ -151,20 +150,20 @@ int main(int argc, char *argv[]){
         error("ERROR reading textfile from socket");
       }
 
-      plaintext = strtok(buffer, " ");
+      ciphertext = strtok(buffer, " ");
 
       key = strtok(NULL, " ");
 
-      printf("SERVER: The plaintext value is: %s. The key value is: %s\n", plaintext, key);
+      printf("SERVER: The plaintext value is: %s. The key value is: %s\n", ciphertext, key);
 
-      char *cipherText = encryptText(plaintext, key);
-      if (cipherText == NULL){
+      char *plaintext = decryptText(ciphertext, key);
+      if (plaintext == NULL){
         perror("ERROR: text could not be encrypted.\n");
         close(connectionSocket);
         continue;
       }
 
-      textRead = send(connectionSocket, cipherText, strlen(cipherText), 0);
+      textRead = send(connectionSocket, plaintext, strlen(plaintext), 0);
       if (textRead < 0){
         error("ERROR writing to socket");
       }

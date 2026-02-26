@@ -26,10 +26,42 @@ int main(int argc, char *argv[]) {
   int socketFD, charsWritten, charsRead;
   struct sockaddr_in serverAddress;
   char buffer[256];
+  char *cipherText = NULL;
+  char *keyFileString = NULL;
+  size_t len_ciphertext = 0;
+  size_t len_key = 0;
 
   if (argc < 4) {
-    fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]);
+    fprintf(stderr,"USAGE: %s cyphertext key port\n", argv[0]);
     exit(0);
+  }
+
+  FILE *cipherTextFile = fopen(argv[1], "r");
+  FILE *keyFile = fopen(argv[2], "r");
+
+  if (!cipherTextFile || !keyFile){
+    error("Error opening files.\n");
+    return NULL;
+  }
+
+  if (getline(&cipherText, &len_ciphertext, cipherTextFile) == -1){
+    error("Error reading cipher text");
+  }
+
+  if (getline(&keyFileString, &len_key, keyFile) == -1){
+    error("Error reading key text");
+  }
+
+  len_ciphertext = strlen(cipherText);
+  len_key = strlen(keyFileString);
+
+  fclose(cipherText);
+  fclose(keyFile);
+
+  if (len_key < len_ciphertext){
+    free(cipherText);
+    free(keyFileString);
+    error("Error: Key is too short");
   }
 
   socketFD = socket(AF_INET, SOCK_STREAM, 0);
@@ -62,7 +94,7 @@ int main(int argc, char *argv[]) {
 
   for (int i; buffer[i] != '\0'; i++){
     if (isalpha(buffer[i]) == 0 && buffer[i] != ' '){
-      error("Error: Bad character in cipher received");
+      error("Error: Bad character in plaintext received");
     }
   }
 

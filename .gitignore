@@ -6,3 +6,5 @@ enc_client
 enc_server
 dec_server
 keygen
+plaintext1
+mykey
