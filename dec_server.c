@@ -48,16 +48,16 @@ char *decryptText(char *ciphertextPath, char *keyPath){
     return NULL;
   }
 
-  char *cipherText = malloc(ciphertextLen + 1);
+  char *plainletterText = malloc(ciphertextLen + 1);
   int cipherLetter;
   int plaintextLetter;
   int keyLetter;
 
   for (int i = 0; i < ciphertextLen; i++){
     if (ciphertextLine[i] == ' '){
-      plaintextLetter = 26;
+      cipherLetter = 26;
     } else {
-      plaintextLetter = ciphertextLine[i] - 'A';
+      cipherLetter = ciphertextLine[i] - 'A';
     }
 
     if (keyLine[i] == ' '){
@@ -66,19 +66,20 @@ char *decryptText(char *ciphertextPath, char *keyPath){
       keyLetter = keyLine[i] - 'A';
     }
 
-    cipherLetter = (keyLetter + plaintextLetter) % 27;
-    if (cipherLetter == 26){
-      cipherText[i] = ' ';
+    plaintextLetter = (cipherLetter - keyLetter + 27) % 27;
+
+    if (plaintextLetter == 26){
+      plainletterText[i] = ' ';
     } else {
-      cipherText[i] = 'A' + cipherLetter;
+      plainletterText[i] = 'A' + plaintextLetter;
     }
   }
 
-  cipherText[ciphertextLen] = '\0';
+  plainletterText[ciphertextLen] = '\0';
 
   free(ciphertextLine);
   free(keyLine);
-  return cipherText;
+  return plainletterText;
 
 }
 
@@ -140,10 +141,6 @@ int main(int argc, char *argv[]){
 
     } else if (pid == 0){
 
-      printf("SERVER: Connected to client running at host %d port %d\n",
-        ntohs(clientAddress.sin_addr.s_addr),
-        ntohs(clientAddress.sin_port));
-
       memset(buffer, '\0', 256);
       textRead = recv(connectionSocket, buffer, 255, 0);
       if (textRead < 0){
@@ -154,14 +151,14 @@ int main(int argc, char *argv[]){
 
       key = strtok(NULL, " ");
 
-      printf("SERVER: The plaintext value is: %s. The key value is: %s\n", ciphertext, key);
-
       char *plaintext = decryptText(ciphertext, key);
       if (plaintext == NULL){
         perror("ERROR: text could not be encrypted.\n");
         close(connectionSocket);
         continue;
       }
+
+      printf("%s\n", plaintext);
 
       textRead = send(connectionSocket, plaintext, strlen(plaintext), 0);
       if (textRead < 0){

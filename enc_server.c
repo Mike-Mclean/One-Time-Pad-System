@@ -87,7 +87,6 @@ void error(const char *msg) {
   exit(1);
 }
 
-// Set up the address struct for the server socket
 void setupAddressStruct(struct sockaddr_in* address, int portNumber){
   memset((char*) address, '\0', sizeof(*address));
   address->sin_family = AF_INET;
@@ -141,10 +140,6 @@ int main(int argc, char *argv[]){
 
     } else if (pid == 0){
 
-      printf("SERVER: Connected to client running at host %d port %d\n",
-        ntohs(clientAddress.sin_addr.s_addr),
-        ntohs(clientAddress.sin_port));
-
       memset(buffer, '\0', 256);
       textRead = recv(connectionSocket, buffer, 255, 0);
       if (textRead < 0){
@@ -154,8 +149,6 @@ int main(int argc, char *argv[]){
       plaintext = strtok(buffer, " ");
 
       key = strtok(NULL, " ");
-
-      printf("SERVER: The plaintext value is: %s. The key value is: %s\n", plaintext, key);
 
       char *cipherText = encryptText(plaintext, key);
       if (cipherText == NULL){

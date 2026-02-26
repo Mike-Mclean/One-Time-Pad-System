@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+  printf("%s\n", buffer);
 
   close(socketFD);
   return 0;

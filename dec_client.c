@@ -41,7 +41,6 @@ int main(int argc, char *argv[]) {
 
   if (!cipherTextFile || !keyFile){
     error("Error opening files.\n");
-    return NULL;
   }
 
   if (getline(&cipherText, &len_ciphertext, cipherTextFile) == -1){
@@ -55,7 +54,7 @@ int main(int argc, char *argv[]) {
   len_ciphertext = strlen(cipherText);
   len_key = strlen(keyFileString);
 
-  fclose(cipherText);
+  fclose(cipherTextFile);
   fclose(keyFile);
 
   if (len_key < len_ciphertext){
@@ -98,7 +97,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+  printf("%s\n", buffer);
 
   close(socketFD);
   return 0;
