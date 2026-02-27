@@ -26,6 +26,7 @@ int main(int argc, char *argv[]) {
   int socketFD, charsWritten, charsRead;
   struct sockaddr_in serverAddress;
   char buffer[256];
+  char ack[10];
   char *cipherText = NULL;
   char *keyFileString = NULL;
   size_t len_ciphertext = 0;
@@ -72,6 +73,22 @@ int main(int argc, char *argv[]) {
 
   if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0){
     error("CLIENT: ERROR connecting");
+  }
+
+  memset(buffer, '\0', sizeof(buffer));
+  strncpy(buffer, "DEC", sizeof(buffer) - 1);
+
+  charsWritten = send(socketFD, buffer, strlen(buffer), 0);
+  if (charsWritten < 0){
+    error("CLIENT: ERROR writing to socket");
+  }
+  if (charsWritten < strlen(buffer)){
+    error("CLIENT: WARNING: Not all data written to socket!\n");
+  }
+
+  charsRead = recv(socketFD, ack, sizeof(ack) - 1, 0);
+  if (charsRead < 0 || charsRead == 0){
+    error("CLIENT: Error verifying server/client connection");
   }
 
   memset(buffer, '\0', sizeof(buffer));

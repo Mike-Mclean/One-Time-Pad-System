@@ -98,10 +98,12 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber){
 int main(int argc, char *argv[]){
   int connectionSocket, textRead, keyRead;
   char buffer[256];
+  char ack[10];
   char *ciphertext;
   char *key;
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
+  int num_connections = 0;
 
   if (argc < 2) {
     fprintf(stderr,"USAGE: %s port\n", argv[0]);
@@ -131,6 +133,7 @@ int main(int argc, char *argv[]){
       error("ERROR on accept");
     }
 
+    num_connections++;
     pid_t pid = fork();
 
     if (pid < 0){
@@ -140,6 +143,22 @@ int main(int argc, char *argv[]){
       exit(0);
 
     } else if (pid == 0){
+
+      memset(buffer, '\0', 256);
+      textRead = recv(connectionSocket, buffer, 255, 0);
+      if (textRead < 0){
+        error("ERROR reading textfile from socket");
+      }
+
+      ciphertext = strtok(buffer, "\0");
+
+      if (strcmp(ciphertext, "DEC") != 0){
+        error("SERVER: Verification key mismatch! Closing connection.\n");
+        close(connectionSocket);
+        continue;
+      }
+
+      send(connectionSocket, "ACK", sizeof(ack) - 1, 0);
 
       memset(buffer, '\0', 256);
       textRead = recv(connectionSocket, buffer, 255, 0);
@@ -169,6 +188,10 @@ int main(int argc, char *argv[]){
     } else {
       close(connectionSocket);
       pid_t id = waitpid(-1, NULL, WNOHANG);
+      while (id > 0){
+        num_connections--;
+        id = waitpid(-1, NULL, WNOHANG);
+      }
     }
 
   }
