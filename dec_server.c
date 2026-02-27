@@ -177,8 +177,6 @@ int main(int argc, char *argv[]){
         continue;
       }
 
-      printf("%s\n", plaintext);
-
       textRead = send(connectionSocket, plaintext, strlen(plaintext), 0);
       if (textRead < 0){
         error("ERROR writing to socket");
